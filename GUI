@@ -349,7 +349,7 @@ function UiLib.new(opts)
     win.Parent = sg
     self.Window = win
 
-    -- 背景纹理感（用多个半透明叠加模拟噪点感）
+    -- 背景纹理感
     local texOverlay = Instance.new("ImageLabel")
     texOverlay.Name = "Noise"
     texOverlay.Size = UDim2.new(1, 0, 1, 0)
@@ -403,7 +403,7 @@ function UiLib.new(opts)
     TweenService:Create(borderGrad, TweenInfo.new(12, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1), {Rotation = 405}):Play()
     TweenService:Create(glowGrad, TweenInfo.new(15, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1), {Rotation = 585}):Play()
 
-    -- ===== 标题栏：独特的不对称设计 =====
+    -- 标题栏
     local titleBar = Instance.new("Frame")
     titleBar.Name = "Header"
     titleBar.Size = UDim2.new(1, 0, 0, 46)
@@ -411,7 +411,6 @@ function UiLib.new(opts)
     titleBar.Parent = win
     mkCorner(titleBar, 14)
 
-    -- 底部紫色发光线
     local headerGlow = Instance.new("Frame")
     headerGlow.Size = UDim2.new(1, -20, 0, 1)
     headerGlow.Position = UDim2.new(0, 10, 1, -1)
@@ -422,7 +421,6 @@ function UiLib.new(opts)
     glowUG.Color = purpleGradient()
     glowUG.Parent = headerGlow
 
-    -- 标题文字 - 偏左下排列风格
     local titleIcon = Instance.new("TextLabel")
     titleIcon.BackgroundTransparency = 1
     titleIcon.Position = UDim2.new(0, 14, 0, 0)
@@ -445,7 +443,6 @@ function UiLib.new(opts)
     titleSub.Text = opts.Title or "interface"
     titleSub.Parent = titleBar
 
-    -- 关闭按钮 - 圆形小按钮
     local closeBtn = Instance.new("TextButton")
     closeBtn.AnchorPoint = Vector2.new(1, 0.5)
     closeBtn.Position = UDim2.new(1, -10, 0.5, 0)
@@ -467,7 +464,6 @@ function UiLib.new(opts)
     end)
     closeBtn.MouseButton1Click:Connect(function() self:Destroy() end)
 
-    -- 最小化按钮
     local hideBtn = Instance.new("TextButton")
     hideBtn.AnchorPoint = Vector2.new(1, 0.5)
     hideBtn.Position = UDim2.new(1, -40, 0.5, 0)
@@ -488,7 +484,6 @@ function UiLib.new(opts)
         tw(hideBtn, ANIM.Fast, {BackgroundColor3 = THEME.Card, TextColor3 = THEME.TextMuted})
     end)
 
-    -- 显示按钮GUI
     local showGui = Instance.new("ScreenGui")
     showGui.Name = sg.Name .. "_Show"
     showGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
@@ -511,7 +506,6 @@ function UiLib.new(opts)
     showBtn.Parent = showGui
     mkCorner(showBtn, 10)
     mkStroke(showBtn, THEME.Stroke, 1, 0.3)
-    -- 紫色圆点图标
     local dot = Instance.new("Frame")
     dot.Size = UDim2.new(0, 10, 0, 10)
     dot.Position = UDim2.new(0.5, -5, 0.5, -5)
@@ -523,7 +517,7 @@ function UiLib.new(opts)
     hideBtn.MouseButton1Click:Connect(function() self:Hide() end)
     showBtn.MouseButton1Click:Connect(function() self:Show() end)
 
-    -- ===== 主体布局：顶部Tab + 下方内容 =====
+    -- 主体布局
     local body = Instance.new("Frame")
     body.Name = "Body"
     body.Position = UDim2.new(0, 0, 0, 46)
@@ -531,7 +525,6 @@ function UiLib.new(opts)
     body.BackgroundTransparency = 1
     body.Parent = win
 
-    -- 顶部Tab栏
     local tabBar = Instance.new("Frame")
     tabBar.Name = "TabBar"
     tabBar.Size = UDim2.new(1, 0, 0, 38)
@@ -547,7 +540,6 @@ function UiLib.new(opts)
     tabList.VerticalAlignment = Enum.VerticalAlignment.Center
     tabList.Parent = tabBar
 
-    -- Tab底部分隔线
     local tabSep = Instance.new("Frame")
     tabSep.Size = UDim2.new(1, 0, 0, 1)
     tabSep.Position = UDim2.new(0, 0, 1, 0)
@@ -555,7 +547,6 @@ function UiLib.new(opts)
     tabSep.BackgroundTransparency = 0.3
     tabSep.Parent = tabBar
 
-    -- 页面容器
     local pageHolder = Instance.new("Frame")
     pageHolder.Name = "PageHolder"
     pageHolder.Position = UDim2.new(0, 0, 0, 38)
@@ -690,7 +681,6 @@ function UiLib:SetTabActive(tabName)
         if active then
             tw(btn, ANIM.Fast, {BackgroundColor3 = THEME.AccentDark, BackgroundTransparency = 0})
             btn.TextColor3 = THEME.Text
-            -- 激活指示线
             local line = btn:FindFirstChild("ActiveLine")
             if line then line.Visible = true end
         else
@@ -722,7 +712,6 @@ function UiLib:CreateTab(name)
     mkCorner(tabBtn, 7)
     mkPad(tabBtn, 6, 0, 6, 0)
 
-    -- 底部激活线
     local activeLine = Instance.new("Frame")
     activeLine.Name = "ActiveLine"
     activeLine.Size = UDim2.new(1, -8, 0, 2)
@@ -767,7 +756,7 @@ function UiLib:CreateTab(name)
 
     local api = {}
 
-    -- ===== Button：渐变紫色风格 =====
+    -- Button
     function api:Button(opts)
         opts = opts or {}
         local title = opts.Title or "Button"
@@ -784,7 +773,6 @@ function UiLib:CreateTab(name)
         mkCorner(btn, 9)
         mkStroke(btn, THEME.Stroke, 1, 0.5)
 
-        -- 左侧紫色装饰线
         local deco = Instance.new("Frame")
         deco.Size = UDim2.new(0, 3, 1, -10)
         deco.Position = UDim2.new(0, 0, 0.5, 0)
@@ -814,7 +802,7 @@ function UiLib:CreateTab(name)
         return btn
     end
 
-    -- ===== Label =====
+    -- Label
     function api:Label(opts)
         opts = opts or {}
         local title = opts.Title or "Label"
@@ -843,7 +831,7 @@ function UiLib:CreateTab(name)
         }
     end
 
-    -- ===== Toggle：精致胶囊 =====
+    -- Toggle
     function api:Toggle(opts)
         opts = opts or {}
         local title = opts.Title or "Toggle"
@@ -903,7 +891,7 @@ function UiLib:CreateTab(name)
         return { Set = function(_, v) state = v and true or false; update() end, Get = function() return state end }
     end
 
-    -- ===== Slider：现代圆点拖拽 =====
+    -- Slider
     function api:Slider(opts)
         opts = opts or {}
         local title = opts.Title or "Slider"
@@ -968,7 +956,6 @@ function UiLib:CreateTab(name)
         fill.Parent = bar
         mkCorner(fill, 999)
 
-        -- 圆点指示器
         local dot = Instance.new("Frame")
         dot.Size = UDim2.new(0, 12, 0, 12)
         dot.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -976,7 +963,6 @@ function UiLib:CreateTab(name)
         dot.Parent = bar
         mkCorner(dot, 999)
 
-        -- 发光效果
         local dotGlow = Instance.new("UIStroke")
         dotGlow.Color = THEME.Accent
         dotGlow.Thickness = 3
@@ -1044,7 +1030,7 @@ function UiLib:CreateTab(name)
         return { Set = function(_, v) value = math.clamp(v, min, max); updateVisual() end, Get = function() return value end }
     end
 
-    -- ===== Input =====
+    -- Input (修复了 FocusLost 语法错误)
     function api:Input(opts)
         opts = opts or {}
         local title = opts.Title or "Input"
@@ -1088,7 +1074,7 @@ function UiLib:CreateTab(name)
             tw(box, ANIM.Fast, {BackgroundColor3 = THEME.Bg3})
             tw(box:FindFirstChildOfClass("UIStroke"), ANIM.Fast, {Color = THEME.AccentDark, Transparency = 0.2})
         end)
-        box.FocusLost: function(enter)
+        box.FocusLost:Connect(function(enter)
             tw(box, ANIM.Fast, {BackgroundColor3 = THEME.Bg2})
             tw(box:FindFirstChildOfClass("UIStroke"), ANIM.Fast, {Color = THEME.Stroke, Transparency = 0.4})
             if opts.Callback then task.spawn(opts.Callback, box.Text, enter) end
@@ -1096,7 +1082,7 @@ function UiLib:CreateTab(name)
         return { Set = function(_, v) box.Text = tostring(v) end, Get = function() return box.Text end }
     end
 
-    -- ===== Dropdown =====
+    -- Dropdown
     function api:Dropdown(opts)
         opts = opts or {}
         local title = opts.Title or "Dropdown"
@@ -1340,7 +1326,7 @@ function UiLib:CreateTab(name)
         }
     end
 
-    -- ===== Colorpicker =====
+    -- Colorpicker
     function api:Colorpicker(opts)
         opts = opts or {}
         local title = opts.Title or "Color"
@@ -1450,7 +1436,6 @@ function UiLib:CreateTab(name)
         hueCursor.Parent = hueBar
         mkCorner(hueCursor, 999)
 
-        -- 右侧颜色信息
         local infoX = 176
         local infoLabels = {}
         for i, prefix in ipairs({"HEX", "R", "G", "B"}) do
@@ -1556,7 +1541,7 @@ function UiLib:CreateTab(name)
         }
     end
 
-    -- ===== Separator 分隔线 =====
+    -- Separator
     function api:Separator(opts)
         opts = opts or {}
         local sep = Instance.new("Frame")
@@ -1609,5 +1594,5 @@ end
 
 UiLib.Theme = THEME
 UiLib.Anim = ANIM
-pcall(setfpscap, math.huge)
+-- 移除可能引发 attempt to call 的 setfpscap 调用
 return UiLib
