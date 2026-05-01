@@ -269,7 +269,6 @@ function UiLib:Notify(opts)
 	createCorner(card, 12)
 	createStroke(card, THEME.Stroke, 1, 0.35)
 	createPadding(card, 10)
-	-- 通知卡片内部布局保持不变，略
 
 	local row = Instance.new("Frame")
 	row.BackgroundTransparency = 1
@@ -727,7 +726,7 @@ function UiLib.new(opts)
 	return self
 end
 
--- Show/Hide 方法不变，微调透明度
+-- Show / Hide / Toggle 方法
 function UiLib:Show()
 	if self.RootGui then
 		if self.Window and self._targetWindowSize and self._targetWindowPosition then
@@ -900,7 +899,8 @@ function UiLib:CreateTab(name: string)
 
 	local api = {}
 
-	-- 原有控件：Button、Label、Toggle、Slider、Input、Dropdown、Colorpicker（透明度均已微调）
+	-- 原有控件均完整保留并应用透明度
+
 	function api:Button(opts)
 		opts = opts or {}
 		local title = opts.Title or "Button"
@@ -966,9 +966,843 @@ function UiLib:CreateTab(name: string)
 		}
 	end
 
-	-- Toggle、Slider、Input、Dropdown、Colorpicker 代码均已在原基础上加上了 BackgroundTransparency = THEME.CardTransparency，其余不变，为节省篇幅仅列出修改后的代表性部分，完整代码请以实际返回为准。以下给出关键控件示例，并在末尾附完整版。
-	-- 注：因长度限制，我将在末尾提供完整版代码，包含所有控件的完整定义。
-	-- 实际上之前的代码已经较长，下面直接给出新增加的几个控件。
+	function api:Toggle(opts)
+		opts = opts or {}
+		local title = opts.Title or "Toggle"
+		local state = opts.Default or false
+		local card = Instance.new("Frame")
+		card.Size = UDim2.new(1, 0, 0, 42)
+		card.BackgroundColor3 = THEME.Card
+		card.BackgroundTransparency = THEME.CardTransparency
+		card.Parent = page
+		createCorner(card, 12)
+		createStroke(card, THEME.Stroke, 1, 0.4)
+
+		local titleLabel = Instance.new("TextLabel")
+		titleLabel.BackgroundTransparency = 1
+		titleLabel.Position = UDim2.new(0, 12, 0, 0)
+		titleLabel.Size = UDim2.new(1, -72, 1, 0)
+		titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+		titleLabel.Font = Enum.Font.GothamMedium
+		titleLabel.TextSize = 13
+		titleLabel.Text = title
+		titleLabel.TextColor3 = THEME.Text
+		titleLabel.Parent = card
+
+		local sw = Instance.new("Frame")
+		sw.AnchorPoint = Vector2.new(1, 0.5)
+		sw.Position = UDim2.new(1, -12, 0.5, 0)
+		sw.Size = UDim2.new(0, 42, 0, 22)
+		sw.BackgroundColor3 = state and THEME.Accent or Color3.fromRGB(68, 74, 90)
+		sw.Parent = card
+		createCorner(sw, 999)
+
+		local knob = Instance.new("Frame")
+		knob.Size = UDim2.new(0, 18, 0, 18)
+		knob.Position = state and UDim2.new(1, -20, 0.5, -9) or UDim2.new(0, 2, 0.5, -9)
+		knob.BackgroundColor3 = Color3.fromRGB(245, 247, 252)
+		knob.Parent = sw
+		createCorner(knob, 999)
+
+		local function update()
+			tween(sw, ANIM.Fast, {BackgroundColor3 = state and THEME.Accent or Color3.fromRGB(68, 74, 90)})
+			tween(knob, ANIM.Fast, {Position = state and UDim2.new(1, -20, 0.5, -9) or UDim2.new(0, 2, 0.5, -9)})
+			if opts.Callback then
+				task.spawn(opts.Callback, state)
+			end
+		end
+		update()
+
+		local click = Instance.new("TextButton")
+		click.BackgroundTransparency = 1
+		click.Size = UDim2.new(1, 0, 1, 0)
+		click.Text = ""
+		click.Parent = card
+		click.MouseButton1Click:Connect(function()
+			state = not state
+			update()
+		end)
+
+		return {
+			Set = function(_, val) state = val and true or false update() end,
+			Get = function() return state end
+		}
+	end
+
+	function api:Slider(opts)
+		opts = opts or {}
+		local title = opts.Title or "Slider"
+		local min = opts.Min or 0
+		local max = opts.Max or 100
+		local value = math.clamp(opts.Default or min, min, max)
+		local step = opts.Step or 1
+		local stepStr = tostring(step)
+		local dotIndex = string.find(stepStr, "%.")
+		local decimals = dotIndex and (#stepStr - dotIndex) or 0
+
+		local function normalizeNumber(n: number)
+			if decimals <= 0 then return math.floor(n + 0.5) end
+			local mul = 10 ^ decimals
+			return math.floor(n * mul + 0.5) / mul
+		end
+
+		local function formatValue(n: number)
+			local fixed = normalizeNumber(n)
+			if decimals <= 0 then return tostring(fixed) end
+			local s = string.format("%." .. tostring(decimals) .. "f", fixed)
+			s = s:gsub("0+$", ""):gsub("%.$", "")
+			return s
+		end
+
+		local card = Instance.new("Frame")
+		card.Size = UDim2.new(1, 0, 0, 64)
+		card.BackgroundColor3 = THEME.Card
+		card.BackgroundTransparency = THEME.CardTransparency
+		card.Parent = page
+		createCorner(card, 12)
+		createStroke(card, THEME.Stroke, 1, 0.4)
+
+		local titleLabel = Instance.new("TextLabel")
+		titleLabel.BackgroundTransparency = 1
+		titleLabel.Position = UDim2.new(0, 12, 0, 8)
+		titleLabel.Size = UDim2.new(1, -90, 0, 18)
+		titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+		titleLabel.Text = title
+		titleLabel.Font = Enum.Font.GothamMedium
+		titleLabel.TextSize = 13
+		titleLabel.TextColor3 = THEME.Text
+		titleLabel.Parent = card
+
+		local valueLabel = Instance.new("TextLabel")
+		valueLabel.BackgroundTransparency = 1
+		valueLabel.Position = UDim2.new(1, -74, 0, 8)
+		valueLabel.Size = UDim2.new(0, 62, 0, 18)
+		valueLabel.TextXAlignment = Enum.TextXAlignment.Right
+		valueLabel.Font = Enum.Font.Gotham
+		valueLabel.TextSize = 12
+		valueLabel.TextColor3 = THEME.TextSoft
+		valueLabel.Parent = card
+
+		local bar = Instance.new("Frame")
+		bar.Position = UDim2.new(0, 12, 1, -22)
+		bar.Size = UDim2.new(1, -24, 0, 20)
+		bar.BackgroundColor3 = Color3.fromRGB(58, 63, 79)
+		bar.Parent = card
+		createCorner(bar, 999)
+
+		local dragHitbox = Instance.new("TextButton")
+		dragHitbox.Name = "DragHitbox"
+		dragHitbox.BackgroundTransparency = 1
+		dragHitbox.Text = ""
+		dragHitbox.AutoButtonColor = false
+		dragHitbox.Position = UDim2.new(0, 0, 0.5, -16)
+		dragHitbox.Size = UDim2.new(1, 0, 0, 32)
+		dragHitbox.ZIndex = 5
+		dragHitbox.Parent = bar
+
+		local fill = Instance.new("Frame")
+		fill.Size = UDim2.new(0, 0, 1, 0)
+		fill.BackgroundColor3 = THEME.Accent
+		fill.Parent = bar
+		createCorner(fill, 999)
+
+		local dragging = false
+		local activeInput: InputObject?
+
+		local function setByX(mouseX: number)
+			local startX = bar.AbsolutePosition.X
+			local width = bar.AbsoluteSize.X
+			local alpha = math.clamp((mouseX - startX) / width, 0, 1)
+			local raw = min + (max - min) * alpha
+			local snapped = math.floor(raw / step + 0.5) * step
+			value = normalizeNumber(math.clamp(snapped, min, max))
+			local percent = (value - min) / (max - min)
+			fill.Size = UDim2.new(percent, 0, 1, 0)
+			valueLabel.Text = formatValue(value)
+			if opts.Callback then opts.Callback(value) end
+		end
+
+		local function updateVisual()
+			local percent = (value - min) / (max - min)
+			fill.Size = UDim2.new(percent, 0, 1, 0)
+			value = normalizeNumber(value)
+			valueLabel.Text = formatValue(value)
+		end
+		updateVisual()
+
+		local function isDragInput(input: InputObject): boolean
+			return input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch
+		end
+
+		dragHitbox.InputBegan:Connect(function(input)
+			if not isDragInput(input) then return end
+			dragging = true
+			activeInput = input
+			setByX(input.Position.X)
+		end)
+
+		UserInputService.InputChanged:Connect(function(input)
+			if not dragging then return end
+			if activeInput and input ~= activeInput then return end
+			if not isDragInput(input) then return end
+			setByX(input.Position.X)
+		end)
+
+		UserInputService.InputEnded:Connect(function(input)
+			if not dragging then return end
+			if activeInput and input ~= activeInput then return end
+			if not isDragInput(input) then return end
+			dragging = false
+			activeInput = nil
+		end)
+
+		return {
+			Set = function(_, val) value = math.clamp(val, min, max) updateVisual() end,
+			Get = function() return value end
+		}
+	end
+
+	function api:Input(opts)
+		opts = opts or {}
+		local title = opts.Title or "Input"
+		local card = Instance.new("Frame")
+		card.Size = UDim2.new(1, 0, 0, 42)
+		card.BackgroundColor3 = THEME.Card
+		card.BackgroundTransparency = THEME.CardTransparency
+		card.Parent = page
+		createCorner(card, 12)
+		createStroke(card, THEME.Stroke, 1, 0.4)
+
+		local titleLabel = Instance.new("TextLabel")
+		titleLabel.BackgroundTransparency = 1
+		titleLabel.Position = UDim2.new(0, 12, 0, 0)
+		titleLabel.Size = UDim2.new(0, 120, 1, 0)
+		titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+		titleLabel.Font = Enum.Font.GothamMedium
+		titleLabel.TextSize = 13
+		titleLabel.TextColor3 = THEME.Text
+		titleLabel.Text = title
+		titleLabel.Parent = card
+
+		local box = Instance.new("TextBox")
+		box.AnchorPoint = Vector2.new(1, 0.5)
+		box.Position = UDim2.new(1, -10, 0.5, 0)
+		box.Size = UDim2.new(1, -138, 0, 28)
+		box.BackgroundColor3 = THEME.Bg2
+		box.BackgroundTransparency = 0.2
+		box.PlaceholderText = opts.Placeholder or "输入..."
+		box.Text = tostring(opts.Default or "")
+		box.TextColor3 = THEME.Text
+		box.PlaceholderColor3 = THEME.TextSoft
+		box.ClearTextOnFocus = false
+		box.TextXAlignment = Enum.TextXAlignment.Left
+		box.Font = Enum.Font.Gotham
+		box.TextSize = 13
+		box.Parent = card
+		createCorner(box, 8)
+		createStroke(box, THEME.Stroke, 1, 0.3)
+		local boxPadding = Instance.new("UIPadding")
+		boxPadding.PaddingLeft = UDim.new(0, 10)
+		boxPadding.PaddingRight = UDim.new(0, 6)
+		boxPadding.Parent = box
+
+		box.Focused:Connect(function()
+			tween(box, ANIM.Fast, {BackgroundColor3 = Color3.fromRGB(32, 36, 46)})
+		end)
+		box.FocusLost:Connect(function(enterPressed)
+			tween(box, ANIM.Fast, {BackgroundColor3 = THEME.Bg2})
+			if opts.Callback then
+				task.spawn(opts.Callback, box.Text, enterPressed)
+			end
+		end)
+
+		return {
+			Set = function(_, val) box.Text = tostring(val) end,
+			Get = function() return box.Text end
+		}
+	end
+
+	function api:Dropdown(opts)
+		opts = opts or {}
+		local title = opts.Title or "Dropdown"
+		local values = opts.Values or {}
+		local multi = opts.Multi == true
+		local maxDisplay = opts.MaxDisplay or 2
+		local selected
+		local selectedMap = nil
+		if multi then
+			selectedMap = {}
+			if type(opts.Default) == "table" then
+				for _, v in ipairs(opts.Default) do selectedMap[v] = true end
+			elseif opts.Default ~= nil then
+				selectedMap[opts.Default] = true
+			end
+		else
+			selected = opts.Default or values[1] or "None"
+		end
+
+		local open = false
+		local visibleCount = math.min(#values, 4)
+		local enableSearch = opts.Search ~= false
+		local searchExtra = enableSearch and 36 or 0
+
+		local card = Instance.new("Frame")
+		card.Size = UDim2.new(1, 0, 0, 42)
+		card.BackgroundColor3 = THEME.Card
+		card.BackgroundTransparency = THEME.CardTransparency
+		card.ClipsDescendants = true
+		card.Parent = page
+		createCorner(card, 12)
+		createStroke(card, THEME.Stroke, 1, 0.4)
+
+		local btn = Instance.new("TextButton")
+		btn.BackgroundTransparency = 1
+		btn.Size = UDim2.new(1, 0, 0, 42)
+		btn.Text = ""
+		btn.AutoButtonColor = false
+		btn.Parent = card
+
+		local titleLabel = Instance.new("TextLabel")
+		titleLabel.BackgroundTransparency = 1
+		titleLabel.Position = UDim2.new(0, 12, 0, 0)
+		titleLabel.Size = UDim2.new(0.5, 0, 0, 42)
+		titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+		titleLabel.Font = Enum.Font.GothamMedium
+		titleLabel.TextSize = 13
+		titleLabel.TextColor3 = THEME.Text
+		titleLabel.Text = title
+		titleLabel.Parent = card
+
+		local valueLabel = Instance.new("TextLabel")
+		valueLabel.BackgroundTransparency = 1
+		valueLabel.Position = UDim2.new(0.5, 0, 0, 0)
+		valueLabel.Size = UDim2.new(0.5, -26, 0, 42)
+		valueLabel.TextXAlignment = Enum.TextXAlignment.Right
+		valueLabel.Font = Enum.Font.Gotham
+		valueLabel.TextSize = 12
+		valueLabel.TextColor3 = THEME.TextSoft
+		if multi then
+			valueLabel.Text = "None"
+		else
+			valueLabel.Text = tostring(selected)
+		end
+		valueLabel.Parent = card
+
+		local function getMultiSelectedOrdered()
+			local sel = {}
+			if not selectedMap then return sel end
+			for _, v in ipairs(values) do
+				if selectedMap[v] then table.insert(sel, v) end
+			end
+			return sel
+		end
+
+		local function refreshHeaderLabel()
+			if multi then
+				local list = getMultiSelectedOrdered()
+				local count = #list
+				if count == 0 then
+					valueLabel.Text = "None"
+					return
+				end
+				if count <= maxDisplay then
+					local parts = {}
+					for i = 1, count do parts[i] = tostring(list[i]) end
+					valueLabel.Text = table.concat(parts, ", ")
+				else
+					valueLabel.Text = tostring(list[1]) .. " +" .. tostring(count - 1)
+				end
+				return
+			end
+			valueLabel.Text = tostring(selected)
+		end
+
+		local function refreshOptionChosenStyle(optBtn, selectedNow)
+			optBtn.BackgroundColor3 = selectedNow and THEME.AccentSoft or THEME.Bg2
+			optBtn.TextColor3 = selectedNow and THEME.Text or THEME.TextSoft
+		end
+
+		local arrow = Instance.new("TextLabel")
+		arrow.BackgroundTransparency = 1
+		arrow.AnchorPoint = Vector2.new(1, 0.5)
+		arrow.Position = UDim2.new(1, -10, 0, 21)
+		arrow.Size = UDim2.new(0, 14, 0, 14)
+		arrow.Text = "v"
+		arrow.Font = Enum.Font.GothamBold
+		arrow.TextSize = 12
+		arrow.TextColor3 = THEME.TextSoft
+		arrow.Parent = card
+
+		local searchFrame = Instance.new("Frame")
+		searchFrame.Name = "DropdownSearch"
+		searchFrame.Position = UDim2.new(0, 8, 0, 46)
+		searchFrame.Size = UDim2.new(1, -16, 0, 28)
+		searchFrame.BackgroundTransparency = 1
+		searchFrame.Visible = false
+		searchFrame.ClipsDescendants = true
+		searchFrame.Parent = card
+
+		local searchBox
+		if enableSearch then
+			searchBox = Instance.new("TextBox")
+			searchBox.Name = "Search"
+			searchBox.Size = UDim2.new(1, 0, 1, 0)
+			searchBox.BackgroundColor3 = THEME.Bg2
+			searchBox.BackgroundTransparency = 0.2
+			searchBox.BorderSizePixel = 0
+			searchBox.ClearTextOnFocus = false
+			searchBox.Font = Enum.Font.Gotham
+			searchBox.PlaceholderColor3 = THEME.TextSoft
+			searchBox.PlaceholderText = opts.SearchPlaceholder or "搜索..."
+			searchBox.Text = ""
+			searchBox.TextColor3 = THEME.Text
+			searchBox.TextSize = 12
+			searchBox.TextXAlignment = Enum.TextXAlignment.Left
+			searchBox.Parent = searchFrame
+
+			createCorner(searchBox, 7)
+			createStroke(searchBox, THEME.Stroke, 1, 0.35)
+
+			local sp = Instance.new("UIPadding")
+			sp.PaddingLeft = UDim.new(0, 8)
+			sp.PaddingRight = UDim.new(0, 6)
+			sp.Parent = searchBox
+		end
+
+		local optionsHolder = Instance.new("ScrollingFrame")
+		optionsHolder.Position = UDim2.new(0, 8, 0, 44 + searchExtra)
+		optionsHolder.Size = UDim2.new(1, -16, 0, 0)
+		optionsHolder.BackgroundTransparency = 1
+		optionsHolder.BorderSizePixel = 0
+		optionsHolder.CanvasSize = UDim2.new(0, 0, 0, 0)
+		optionsHolder.AutomaticCanvasSize = Enum.AutomaticSize.Y
+		optionsHolder.ScrollBarThickness = 3
+		optionsHolder.ScrollBarImageColor3 = THEME.TextSoft
+		optionsHolder.ScrollBarImageTransparency = 0.45
+		optionsHolder.ScrollingDirection = Enum.ScrollingDirection.Y
+		optionsHolder.Parent = card
+		local optionsList = createList(optionsHolder, 4)
+		optionsList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+			optionsHolder.CanvasSize = UDim2.new(0, 0, 0, optionsList.AbsoluteContentSize.Y)
+		end)
+
+		local optionBtns = {}
+
+		local function containsValue(list, target)
+			for _, v in ipairs(list) do
+				if v == target then return true end
+			end
+			return false
+		end
+
+		local function refreshAllMultiChoices()
+			if not multi then return end
+			for ix, ov in ipairs(values) do
+				local bt = optionBtns[ix]
+				if bt then
+					refreshOptionChosenStyle(bt, selectedMap and selectedMap[ov] == true)
+				end
+			end
+		end
+
+		local function applySearchFilter()
+			if not searchBox then return end
+			local ql = string.lower(searchBox.Text or "")
+			for idx, optVal in ipairs(values) do
+				local bt = optionBtns[idx]
+				if bt then
+					if ql == "" then
+						bt.Visible = true
+					else
+						local label = string.lower(tostring(optVal))
+						bt.Visible = string.find(label, ql, 1, true) ~= nil
+					end
+				end
+			end
+			optionsHolder.CanvasPosition = Vector2.zero
+		end
+
+		local function setOpen(flag: boolean)
+			open = flag
+			if searchFrame then searchFrame.Visible = enableSearch and flag == true or false end
+			if flag and enableSearch and searchBox then
+				searchBox.Text = ""
+				applySearchFilter()
+			end
+			local visibleHeight = visibleCount > 0 and (visibleCount * 30 - 4) or 0
+			optionsHolder.Size = UDim2.new(1, -16, 0, flag and visibleHeight or 0)
+			local targetHeight = open and (42 + searchExtra + (visibleCount * 30) + 10) or 42
+			tween(card, ANIM.Normal, {Size = UDim2.new(1, 0, 0, targetHeight)})
+			arrow.Text = flag and "^" or "v"
+		end
+
+		local function rebuildOptionButtons()
+			for _, oldBtn in ipairs(optionBtns) do
+				if oldBtn and oldBtn.Parent then oldBtn:Destroy() end
+			end
+			optionBtns = {}
+
+			for idx, option in ipairs(values) do
+				local opt = Instance.new("TextButton")
+				opt.Size = UDim2.new(1, 0, 0, 26)
+				opt.BackgroundColor3 = THEME.Bg2
+				opt.BackgroundTransparency = 0.2
+				opt.Text = tostring(option)
+				opt.TextColor3 = THEME.TextSoft
+				opt.Font = Enum.Font.Gotham
+				opt.TextSize = 12
+				opt.AutoButtonColor = false
+				opt.Parent = optionsHolder
+				createCorner(opt, 7)
+
+				optionBtns[idx] = opt
+
+				if multi then
+					refreshOptionChosenStyle(opt, selectedMap[option] == true)
+				end
+
+				opt.MouseEnter:Connect(function()
+					if multi and selectedMap[option] then return end
+					tween(opt, ANIM.Fast, {BackgroundColor3 = Color3.fromRGB(36, 40, 52), TextColor3 = THEME.Text})
+				end)
+				opt.MouseLeave:Connect(function()
+					if multi then
+						refreshOptionChosenStyle(opt, selectedMap[option] == true)
+						return
+					end
+					tween(opt, ANIM.Fast, {BackgroundColor3 = THEME.Bg2, TextColor3 = THEME.TextSoft})
+				end)
+				opt.MouseButton1Click:Connect(function()
+					if multi then
+						if selectedMap[option] then
+							selectedMap[option] = nil
+						else
+							selectedMap[option] = true
+						end
+						refreshOptionChosenStyle(opt, selectedMap[option] == true)
+						refreshHeaderLabel()
+						if opts.Callback then task.spawn(opts.Callback, getMultiSelectedOrdered()) end
+						return
+					end
+					selected = option
+					refreshHeaderLabel()
+					setOpen(false)
+					if opts.Callback then task.spawn(opts.Callback, selected) end
+				end)
+			end
+		end
+		rebuildOptionButtons()
+
+		if searchBox then
+			searchBox:GetPropertyChangedSignal("Text"):Connect(applySearchFilter)
+		end
+
+		btn.MouseButton1Click:Connect(function()
+			setOpen(not open)
+		end)
+
+		if multi then
+			refreshHeaderLabel()
+			refreshAllMultiChoices()
+		end
+
+		return {
+			Set = function(_, val)
+				if multi then
+					selectedMap = {}
+					if type(val) == "table" then
+						for _, v in ipairs(val) do selectedMap[v] = true end
+					elseif val ~= nil then
+						selectedMap[val] = true
+					end
+					refreshAllMultiChoices()
+					refreshHeaderLabel()
+					if opts.Callback then task.spawn(opts.Callback, getMultiSelectedOrdered()) end
+					return
+				end
+				selected = val
+				refreshHeaderLabel()
+				if opts.Callback then task.spawn(opts.Callback, selected) end
+			end,
+			Get = function()
+				if multi then return getMultiSelectedOrdered() end
+				return selected
+			end,
+			SetValues = function(_, newValues)
+				if type(newValues) ~= "table" then return end
+				values = newValues
+				visibleCount = math.min(#values, 4)
+				if multi then
+					local nextMap = {}
+					for _, v in ipairs(values) do
+						if selectedMap and selectedMap[v] then nextMap[v] = true end
+					end
+					selectedMap = nextMap
+				else
+					if not containsValue(values, selected) then
+						selected = values[1] or "None"
+					end
+				end
+				rebuildOptionButtons()
+				refreshHeaderLabel()
+				applySearchFilter()
+			end
+		}
+	end
+
+	function api:Colorpicker(opts)
+		opts = opts or {}
+		local title = opts.Title or "Colorpicker"
+		local color = opts.Default or Color3.fromRGB(255, 255, 255)
+		local hue, sat, val = color:ToHSV()
+		local expanded = false
+
+		local card = Instance.new("Frame")
+		card.Size = UDim2.new(1, 0, 0, 42)
+		card.BackgroundColor3 = THEME.Card
+		card.BackgroundTransparency = THEME.CardTransparency
+		card.ClipsDescendants = true
+		card.Parent = page
+		createCorner(card, 14)
+		createStroke(card, THEME.Stroke, 1, 0.4)
+
+		local titleLabel = Instance.new("TextLabel")
+		titleLabel.BackgroundTransparency = 1
+		titleLabel.Position = UDim2.new(0, 12, 0, 0)
+		titleLabel.Size = UDim2.new(1, -86, 0, 42)
+		titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+		titleLabel.Font = Enum.Font.GothamMedium
+		titleLabel.TextSize = 13
+		titleLabel.Text = title
+		titleLabel.TextColor3 = THEME.Text
+		titleLabel.Parent = card
+
+		local preview = Instance.new("TextButton")
+		preview.AnchorPoint = Vector2.new(1, 0)
+		preview.Position = UDim2.new(1, -30, 0, 10)
+		preview.Size = UDim2.new(0, 32, 0, 22)
+		preview.BackgroundColor3 = color
+		preview.AutoButtonColor = false
+		preview.Text = ""
+		preview.Parent = card
+		createCorner(preview, 9)
+		createStroke(preview, THEME.Stroke, 1, 0.3)
+
+		local expandIcon = Instance.new("TextLabel")
+		expandIcon.BackgroundTransparency = 1
+		expandIcon.AnchorPoint = Vector2.new(1, 0.5)
+		expandIcon.Position = UDim2.new(1, -10, 0, 21)
+		expandIcon.Size = UDim2.new(0, 12, 0, 12)
+		expandIcon.Text = "v"
+		expandIcon.Font = Enum.Font.GothamBold
+		expandIcon.TextSize = 11
+		expandIcon.TextColor3 = THEME.TextSoft
+		expandIcon.Parent = card
+
+		local headerBtn = Instance.new("TextButton")
+		headerBtn.BackgroundTransparency = 1
+		headerBtn.Size = UDim2.new(1, 0, 0, 42)
+		headerBtn.Text = ""
+		headerBtn.AutoButtonColor = false
+		headerBtn.Parent = card
+
+		local panel = Instance.new("Frame")
+		panel.BackgroundTransparency = 1
+		panel.Position = UDim2.new(0, 0, 0, 42)
+		panel.Size = UDim2.new(1, 0, 0, 168)
+		panel.Parent = card
+
+		local svMap = Instance.new("ImageLabel")
+		svMap.Position = UDim2.new(0, 12, 0, 6)
+		svMap.Size = UDim2.new(0, 168, 0, 156)
+		svMap.Image = "rbxassetid://4155801252"
+		svMap.BackgroundColor3 = Color3.fromHSV(hue, 1, 1)
+		svMap.ScaleType = Enum.ScaleType.Stretch
+		svMap.BorderSizePixel = 0
+		svMap.Parent = panel
+		createCorner(svMap, 10)
+		createStroke(svMap, THEME.Stroke, 1, 0.35)
+
+		local hGrad = Instance.new("UIGradient")
+		hGrad.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
+			ColorSequenceKeypoint.new(0.166, Color3.fromRGB(255, 255, 0)),
+			ColorSequenceKeypoint.new(0.333, Color3.fromRGB(0, 255, 0)),
+			ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 255)),
+			ColorSequenceKeypoint.new(0.666, Color3.fromRGB(0, 0, 255)),
+			ColorSequenceKeypoint.new(0.833, Color3.fromRGB(255, 0, 255)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 0))
+		})
+		hGrad.Rotation = 90
+		hGrad.Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.03),
+			NumberSequenceKeypoint.new(1, 0.03)
+		})
+
+		local hueBar = Instance.new("Frame")
+		hueBar.Position = UDim2.new(0, 188, 0, 6)
+		hueBar.Size = UDim2.new(0, 10, 0, 156)
+		hueBar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		hueBar.Parent = panel
+		createCorner(hueBar, 999)
+		createStroke(hueBar, THEME.Stroke, 1, 0.55)
+		hGrad.Parent = hueBar
+
+		local mapCursor = Instance.new("Frame")
+		mapCursor.AnchorPoint = Vector2.new(0.5, 0.5)
+		mapCursor.Size = UDim2.new(0, 12, 0, 12)
+		mapCursor.BackgroundColor3 = Color3.new(1, 1, 1)
+		mapCursor.Parent = svMap
+		createCorner(mapCursor, 999)
+		createStroke(mapCursor, Color3.fromRGB(0, 0, 0), 1, 0.2)
+
+		local hueCursor = Instance.new("Frame")
+		hueCursor.AnchorPoint = Vector2.new(0.5, 0.5)
+		hueCursor.Size = UDim2.new(1, 6, 0, 4)
+		hueCursor.BackgroundColor3 = Color3.new(1, 1, 1)
+		hueCursor.Parent = hueBar
+		createCorner(hueCursor, 999)
+
+		local valueText = Instance.new("TextLabel")
+		valueText.BackgroundTransparency = 1
+		valueText.Position = UDim2.new(0, 208, 0, 38)
+		valueText.Size = UDim2.new(1, -220, 0, 20)
+		valueText.TextXAlignment = Enum.TextXAlignment.Left
+		valueText.Font = Enum.Font.Gotham
+		valueText.TextSize = 12
+		valueText.TextColor3 = THEME.TextSoft
+		valueText.Parent = panel
+
+		local hexText = Instance.new("TextLabel")
+		hexText.BackgroundTransparency = 1
+		hexText.Position = UDim2.new(0, 208, 0, 60)
+		hexText.Size = UDim2.new(1, -220, 0, 20)
+		hexText.TextXAlignment = Enum.TextXAlignment.Left
+		hexText.Font = Enum.Font.Gotham
+		hexText.TextSize = 12
+		hexText.TextColor3 = THEME.TextSoft
+		hexText.Parent = panel
+
+		local rgbText = Instance.new("TextLabel")
+		rgbText.BackgroundTransparency = 1
+		rgbText.Position = UDim2.new(0, 208, 0, 82)
+		rgbText.Size = UDim2.new(1, -220, 0, 20)
+		rgbText.TextXAlignment = Enum.TextXAlignment.Left
+		rgbText.Font = Enum.Font.Gotham
+		rgbText.TextSize = 12
+		rgbText.TextColor3 = THEME.TextSoft
+		rgbText.Parent = panel
+
+		local function updateBars()
+			local out = Color3.fromHSV(hue, sat, val)
+			svMap.BackgroundColor3 = Color3.fromHSV(hue, 1, 1)
+			preview.BackgroundColor3 = out
+			mapCursor.Position = UDim2.new(sat, 0, 1 - val, 0)
+			hueCursor.Position = UDim2.new(0.5, 0, hue, 0)
+			valueText.Text = ("HSV: %.2f, %.2f, %.2f"):format(hue, sat, val)
+			hexText.Text = "HEX: #" .. out:ToHex()
+			rgbText.Text = ("RGB: %d, %d, %d"):format(
+				math.floor(out.R * 255 + 0.5),
+				math.floor(out.G * 255 + 0.5),
+				math.floor(out.B * 255 + 0.5)
+			)
+			if opts.Callback then opts.Callback(out) end
+		end
+
+		local function setExpanded(flag: boolean)
+			expanded = flag
+			expandIcon.Text = expanded and "^" or "v"
+			local targetHeight = expanded and 210 or 42
+			tween(card, ANIM.Normal, {Size = UDim2.new(1, 0, 0, targetHeight)})
+		end
+
+		local function bindHorizontalMap(map: GuiObject)
+			local dragging = false
+			local heartCon
+
+			local function set(mousePos)
+				local relX = math.clamp((mousePos.X - map.AbsolutePosition.X) / map.AbsoluteSize.X, 0, 1)
+				local relY = math.clamp((mousePos.Y - map.AbsolutePosition.Y) / map.AbsoluteSize.Y, 0, 1)
+				sat = relX
+				val = 1 - relY
+				updateBars()
+			end
+
+			map.InputBegan:Connect(function(input)
+				if input.UserInputType == Enum.UserInputType.MouseButton1 then
+					dragging = true
+					local inset = GuiService:GetGuiInset()
+					local inputPos = Vector2.new(input.Position.X, input.Position.Y)
+					set(inputPos - inset)
+					if heartCon then heartCon:Disconnect() end
+					heartCon = RunService.Heartbeat:Connect(function()
+						if dragging then
+							local inset = GuiService:GetGuiInset()
+							set(UserInputService:GetMouseLocation() - inset)
+						end
+					end)
+				end
+			end)
+
+			UserInputService.InputEnded:Connect(function(input)
+				if input.UserInputType == Enum.UserInputType.MouseButton1 then
+					dragging = false
+					if heartCon then heartCon:Disconnect() heartCon = nil end
+				end
+			end)
+		end
+
+		local function bindHueBar(bar: GuiObject)
+			local dragging = false
+			local heartCon
+
+			local function set(mousePos)
+				local y = math.clamp((mousePos.Y - bar.AbsolutePosition.Y) / bar.AbsoluteSize.Y, 0, 1)
+				hue = y
+				updateBars()
+			end
+
+			bar.InputBegan:Connect(function(input)
+				if input.UserInputType == Enum.UserInputType.MouseButton1 then
+					dragging = true
+					local inset = GuiService:GetGuiInset()
+					local inputPos = Vector2.new(input.Position.X, input.Position.Y)
+					set(inputPos - inset)
+					if heartCon then heartCon:Disconnect() end
+					heartCon = RunService.Heartbeat:Connect(function()
+						if dragging then
+							local inset = GuiService:GetGuiInset()
+							set(UserInputService:GetMouseLocation() - inset)
+						end
+					end)
+				end
+			end)
+
+			UserInputService.InputEnded:Connect(function(input)
+				if input.UserInputType == Enum.UserInputType.MouseButton1 then
+					dragging = false
+					if heartCon then heartCon:Disconnect() heartCon = nil end
+				end
+			end)
+		end
+
+		bindHorizontalMap(svMap)
+		bindHueBar(hueBar)
+		headerBtn.MouseButton1Click:Connect(function()
+			setExpanded(not expanded)
+		end)
+
+		updateBars()
+		setExpanded(false)
+
+		return {
+			Set = function(_, col: Color3)
+				hue, sat, val = col:ToHSV()
+				updateBars()
+			end,
+			Get = function() return Color3.fromHSV(hue, sat, val) end
+		}
+	end
 
 	-- 新增控件 Section
 	function api:Section(opts)
@@ -1057,9 +1891,7 @@ function UiLib:CreateTab(name: string)
 					listening = false
 					updateDisplay()
 					if conn then conn:Disconnect() conn = nil end
-					if opts.Callback then
-						opts.Callback(current)
-					end
+					if opts.Callback then opts.Callback(current) end
 				end
 			end)
 		end
@@ -1107,11 +1939,8 @@ function UiLib:CreateTab(name: string)
 		textLabel.TextWrapped = true
 		textLabel.Text = opts.Text or "Paragraph"
 		textLabel.Parent = card
-		card.TextLabel = textLabel -- 方便后续 Set
 
-		card:GetPropertyChangedSignal("TextLabel"):Connect(function() end) -- 忽略
-
-		local padding = createPadding(card, 12)
+		createPadding(card, 12)
 
 		return {
 			SetText = function(_, t) textLabel.Text = tostring(t) end,
@@ -1134,8 +1963,8 @@ function UiLib:CreateTab(name: string)
 		card.Parent = page
 		createCorner(card, 12)
 		createStroke(card, THEME.Stroke, 1, 0.45)
-		local contentList = createList(card, 6)
-		local padding = createPadding(card, 8)
+		createPadding(card, 8)
+		createList(card, 6)
 
 		local buttons = {}
 		local titleLabel = Instance.new("TextLabel")
@@ -1176,14 +2005,12 @@ function UiLib:CreateTab(name: string)
 			radioBtn.MouseButton1Click:Connect(function()
 				selected = opt
 				for _, b in ipairs(buttons) do
-					local isSel = b.Text == opt
+					local isSel = b.Button.Text == opt
 					b.dot.Visible = isSel
-					b.BackgroundColor3 = isSel and THEME.AccentSoft or THEME.Bg2
-					b.TextColor3 = isSel and THEME.Text or THEME.TextSoft
+					b.Button.BackgroundColor3 = isSel and THEME.AccentSoft or THEME.Bg2
+					b.Button.TextColor3 = isSel and THEME.Text or THEME.TextSoft
 				end
-				if opts.Callback then
-					opts.Callback(selected)
-				end
+				if opts.Callback then opts.Callback(selected) end
 			end)
 
 			table.insert(buttons, {Button = radioBtn, dot = dot})
@@ -1208,11 +2035,9 @@ function UiLib:CreateTab(name: string)
 		}
 	end
 
-	-- 原有控件全部返回完整版，此处为节省篇幅，仅展示新增部分。实际完整代码会包含已有的 Button、Label、Toggle、Slider、Input、Dropdown、Colorpicker，并在其中加入了透明度。
 	return api
 end
 
--- 销毁方法保持不变
 function UiLib:Destroy()
 	if self._isDestroying then return end
 	if self.Window and self.RootGui and self.RootGui.Enabled then
